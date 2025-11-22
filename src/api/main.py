@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Literal, Tuple
+from .routes import router as api_router
+
 
 app = FastAPI(title= "Museum Tour API", version="1.0.0")
+app.include_router(api_router)
 class Exhibit(BaseModel):
     id : str
     name : str

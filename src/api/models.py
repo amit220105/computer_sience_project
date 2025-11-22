@@ -1,8 +1,11 @@
 from typing import Optional, Literal
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+from enum import Enum
 
-ExhibitType = Literal["painting", "sculpture"]
+class ExhibitType(str, Enum):
+    painting = "painting"
+    sculpture = "sculpture"
 class Exhibit(SQLModel, table=True):
     id : str = Field(primary_key=True)
     name : str

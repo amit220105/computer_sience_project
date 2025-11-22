@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import select
 from pydantic import BaseModel
 from typing import List, Tuple, Literal
 from .database import get_session
 from .models import Exhibit, Feedback
+from .services import apply_feedback
+from sqlmodel import Session, select
 
 router = APIRouter()
 
@@ -16,7 +17,7 @@ class ExhibitOut(BaseModel):
     avg_view_time_min : float | None
 
 @router.get("/exhibits", response_model= List[ExhibitOut])
-def list_exhibits(session=Depends(get_session)):
+def list_exhibits(session : Session =Depends(get_session)):
     exhibits = session.exec(select(Exhibit)).all()
     return [
         ExhibitOut(
@@ -34,14 +35,13 @@ class FeedbackIn(BaseModel):
     rating : int
     view_seconds : int
 
-from services import apply_feedback
 @router.post("/feedback")
-def submit_feedback(feedback: FeedbackIn, session: Depends(get_session)):
+def submit_feedback(feedback: FeedbackIn, session : Session =Depends(get_session)):
     exhibit = session.get(Exhibit, feedback.exhibit_id)
     if not exhibit:
         raise HTTPException(status_code=404, detail="Exhibit not found")
     session.add(Feedback(exhibit_id=feedback.exhibit_id, rating=feedback.rating, view_seconeds=feedback.view_seconds))
-    apply_feedback(exhibit, new_rating = feedback.rating, new_view_secondes = feedback.view_seconds)
+    apply_feedback(exhibit, new_rating = feedback.rating, new_view_seconds = feedback.view_seconds)
     session.add(exhibit)
     session.commit()
     session.refresh(exhibit)

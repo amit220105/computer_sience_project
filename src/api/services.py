@@ -7,14 +7,18 @@ def bayesian_score(prior: float, prior_weight: int, ratings_sum: float, ratings_
 
 def apply_feedback(exhibit, *, new_rating: int, new_view_seconds: int, alpha: float = 0.2):
     # ratings
-    exhibit.ratings_sum += new_rating
-    exhibit.ratings_count += 1
-    exhibit.score = bayesian_score(exhibit.prior, exhibit.prior_weight, exhibit.ratings_sum, exhibit.ratings_count)
-    # view time EMA (minutes)
+    exhibit.rating_sum += new_rating
+    exhibit.rating_count += 1
+    exhibit.score = bayesian_score(
+        exhibit.prior, exhibit.prior_weight, exhibit.rating_sum, exhibit.rating_count
+    )
+
+    # --- view time EMA in minutes ---
     new_min = new_view_seconds / 60.0
     if exhibit.avg_view_time_min is None:
         exhibit.avg_view_time_min = new_min
     else:
         exhibit.avg_view_time_min = alpha * new_min + (1 - alpha) * exhibit.avg_view_time_min
+
     exhibit.view_time_count += 1
     return exhibit

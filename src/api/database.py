@@ -1,8 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
 from pathlib import Path
 
-
-DB_PATH = Path(__file__).resolve().parent[2] /"app.db"
+DB_PATH = Path(__file__).resolve().parents[2] / "app.db"   
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 def init_db():
@@ -10,5 +9,3 @@ def init_db():
 
 def get_session():
     return Session(engine)
-
-
