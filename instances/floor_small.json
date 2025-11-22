@@ -1,0 +1,9 @@
+{
+  "entrance": [0, 0],
+  "speed_m_per_min": 60,
+  "exhibits": [
+    {"id":"E1","name":"Sunset","type":"painting","pos":[10,4]},
+    {"id":"E2","name":"Marble Hero","type":"sculpture","pos":[5,12]},
+    {"id":"E3","name":"Blue Room","type":"painting","pos":[14,9]}
+  ]
+}
