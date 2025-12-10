@@ -25,5 +25,25 @@ class Feedback(SQLModel, table=True):
     id : Optional[int] = Field(default=None, primary_key=True)
     exhibit_id : str = Field(foreign_key="exhibit.id")
     rating : int
-    view_seconeds : int
+    view_seconds : int
     timestamp : datetime = Field(default_factory=datetime.utcnow)
+
+class RouteLog(SQLModel, table=True):
+    id: Optional[int] =  Field(default=None, primary_key=True)
+    createAt : datetime = Field(default_factory=datetime.utcnow)
+
+    time_budget_min: float
+    speed_m_per_min: float
+    return_to_entrance: bool
+    max_stops: Optional[int] = None
+    entrance_x: float
+    entrance_y: float
+
+    prefs_json: str = "{}"
+    must_visit_json: str = "[]"
+    avoid_json: str = "[]"
+    visited_json: str = "[]"
+
+    total_time_min: float
+    total_walk_min: float
+    total_view_min: float      
