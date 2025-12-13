@@ -3,6 +3,16 @@ from sqlmodel import SQLModel, Field
 from datetime import datetime
 from enum import Enum
 
+class Room(SQLModel, table=True):
+    id : str = Field(primary_key=True)
+    name : str
+    floor: int
+    x: float
+    y: float
+    width: float
+    height: float
+    exhibits: list["Exhibit"] = Relationship(back_populates="room")
+
 class ExhibitType(str, Enum):
     painting = "painting"
     sculpture = "sculpture"
@@ -12,7 +22,9 @@ class Exhibit(SQLModel, table=True):
     type : ExhibitType
     pos_x : float
     pos_y : float
-
+    floor: int
+    room_id: str = Field(foreign_key="room.id")
+    room: Optional[Room] = Relationship(back_populates="exhibits")
     prior : float = 3.8
     prior_weight : int = 20
     rating_sum : float = 0.0
