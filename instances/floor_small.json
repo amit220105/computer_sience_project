@@ -1,9 +1,232 @@
 {
   "entrance": [0, 0],
   "speed_m_per_min": 60,
+
+  "rooms": [
+    {
+      "id": "R101",
+      "name": "Impressionist Paintings",
+      "floor": 1,
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 8
+    },
+    {
+      "id": "R102",
+      "name": "Modern Paintings",
+      "floor": 1,
+      "x": 14,
+      "y": 0,
+      "width": 10,
+      "height": 8
+    },
+    {
+      "id": "R103",
+      "name": "Renaissance Paintings",
+      "floor": 1,
+      "x": 0,
+      "y": 10,
+      "width": 12,
+      "height": 8
+    },
+
+    {
+      "id": "R201",
+      "name": "Classical Sculptures",
+      "floor": 2,
+      "x": 0,
+      "y": 0,
+      "width": 10,
+      "height": 10
+    },
+    {
+      "id": "R202",
+      "name": "Abstract Sculptures",
+      "floor": 2,
+      "x": 12,
+      "y": 0,
+      "width": 10,
+      "height": 10
+    },
+    {
+      "id": "R203",
+      "name": "Contemporary Sculptures",
+      "floor": 2,
+      "x": 0,
+      "y": 12,
+      "width": 10,
+      "height": 10
+    }
+  ],
+
   "exhibits": [
-    {"id":"E1","name":"Sunset","type":"painting","pos":[10,4]},
-    {"id":"E2","name":"Marble Hero","type":"sculpture","pos":[5,12]},
-    {"id":"E3","name":"Blue Room","type":"painting","pos":[14,9]}
+    {
+      "id": "E1",
+      "name": "Sunrise Over the Sea",
+      "type": "painting",
+      "pos_x": 3,
+      "pos_y": 4,
+      "floor": 1,
+      "room_id": "R101"
+    },
+    {
+      "id": "E2",
+      "name": "Water Lilies",
+      "type": "painting",
+      "pos_x": 7,
+      "pos_y": 2,
+      "floor": 1,
+      "room_id": "R101"
+    },
+    {
+      "id": "E3",
+      "name": "Soft Afternoon Light",
+      "type": "painting",
+      "pos_x": 10,
+      "pos_y": 6,
+      "floor": 1,
+      "room_id": "R101"
+    },
+
+    {
+      "id": "E4",
+      "name": "Urban Night",
+      "type": "painting",
+      "pos_x": 17,
+      "pos_y": 4,
+      "floor": 1,
+      "room_id": "R102"
+    },
+    {
+      "id": "E5",
+      "name": "Sunset Boulevard",
+      "type": "painting",
+      "pos_x": 22,
+      "pos_y": 1,
+      "floor": 1,
+      "room_id": "R102"
+    },
+    {
+      "id": "E6",
+      "name": "Neon Reflections",
+      "type": "painting",
+      "pos_x": 19,
+      "pos_y": 6,
+      "floor": 1,
+      "room_id": "R102"
+    },
+
+    {
+      "id": "E7",
+      "name": "Madonna and Child (Study)",
+      "type": "painting",
+      "pos_x": 2,
+      "pos_y": 12,
+      "floor": 1,
+      "room_id": "R103"
+    },
+    {
+      "id": "E8",
+      "name": "The Merchant's Portrait",
+      "type": "painting",
+      "pos_x": 6,
+      "pos_y": 16,
+      "floor": 1,
+      "room_id": "R103"
+    },
+    {
+      "id": "E9",
+      "name": "Garden of Florence",
+      "type": "painting",
+      "pos_x": 10,
+      "pos_y": 14,
+      "floor": 1,
+      "room_id": "R103"
+    },
+
+    {
+      "id": "E10",
+      "name": "The Thinker Replica",
+      "type": "sculpture",
+      "pos_x": 3,
+      "pos_y": 6,
+      "floor": 2,
+      "room_id": "R201"
+    },
+    {
+      "id": "E11",
+      "name": "Marble Torso",
+      "type": "sculpture",
+      "pos_x": 6,
+      "pos_y": 3,
+      "floor": 2,
+      "room_id": "R201"
+    },
+    {
+      "id": "E12",
+      "name": "Bronze Athlete",
+      "type": "sculpture",
+      "pos_x": 8,
+      "pos_y": 8,
+      "floor": 2,
+      "room_id": "R201"
+    },
+
+    {
+      "id": "E13",
+      "name": "Steel Abstraction",
+      "type": "sculpture",
+      "pos_x": 16,
+      "pos_y": 5,
+      "floor": 2,
+      "room_id": "R202"
+    },
+    {
+      "id": "E14",
+      "name": "Colorful Chaos",
+      "type": "sculpture",
+      "pos_x": 14,
+      "pos_y": 2,
+      "floor": 2,
+      "room_id": "R202"
+    },
+    {
+      "id": "E15",
+      "name": "Twisted Geometry",
+      "type": "sculpture",
+      "pos_x": 20,
+      "pos_y": 8,
+      "floor": 2,
+      "room_id": "R202"
+    },
+
+    {
+      "id": "E16",
+      "name": "Floating Balance",
+      "type": "sculpture",
+      "pos_x": 2,
+      "pos_y": 14,
+      "floor": 2,
+      "room_id": "R203"
+    },
+    {
+      "id": "E17",
+      "name": "Concrete Whisper",
+      "type": "sculpture",
+      "pos_x": 6,
+      "pos_y": 18,
+      "floor": 2,
+      "room_id": "R203"
+    },
+    {
+      "id": "E18",
+      "name": "Glass Spiral",
+      "type": "sculpture",
+      "pos_x": 9,
+      "pos_y": 20,
+      "floor": 2,
+      "room_id": "R203"
+    }
   ]
 }

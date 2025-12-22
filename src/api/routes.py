@@ -26,6 +26,8 @@ class ExhibitOut(BaseModel):
     pos : Tuple[float, float]
     score : float
     avg_view_time_min : float | None
+    room_id : Optional[str] = None
+    floor: Optional[int] = None
 
 @router.get("/exhibits", response_model= List[ExhibitOut])
 def list_exhibits(session : Session =Depends(get_session)):
@@ -37,7 +39,10 @@ def list_exhibits(session : Session =Depends(get_session)):
             type=ex.type,
             pos=(ex.pos_x, ex.pos_y),
             score=ex.score,
-            avg_view_time_min=ex.avg_view_time_min
+            avg_view_time_min=ex.avg_view_time_min,
+            room_id=ex.room_id,
+            floor=ex.floor,
+
         ) for ex in exhibits
     ]   
 
@@ -81,6 +86,8 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
             "pos": (ex.pos_x, ex.pos_y),
             "score": float(ex.score),
             "view_min": max(2.0, float(ex.avg_view_time_min) if ex.avg_view_time_min is not None else 5.0),
+            "floor": ex.floor,
+            "room_id": ex.room_id,
         }
         for ex in rows
         if ex.id not in set(req.avoid)
@@ -91,20 +98,29 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
     must_pool = [id_to_obj[i] for i in req.must_visit if i in id_to_obj]
     other_pool = [e for e in exhibits if e["id"] not in set(req.must_visit)]
 
-    def walk_min(a, b):
-        return math.hypot(a[0] - b[0], a[1] - b[1]) / req.speed_m_per_min
+    def walk_time_cost(a, b, a_floor, b_floor, a_room_id, b_room_id):
+        floor_penalty = 2.0  # minutes per floor change
+        room_penalty = 0.2   # minutes per room change
+        base = math.hypot(a[0] - b[0], a[1] - b[1]) / req.speed_m_per_min
+        base += abs(a_floor - b_floor) * floor_penalty  # slight penalty for floor changes
+        if a_room_id is not None and b_room_id is not None and a_room_id != b_room_id:
+            base += room_penalty
+        return base
 
     pos = tuple(req.entrance)
+    curr_floor = 1 # assuming entrance is on floor 0
+    curr_room_id = None # no room at entrance
     remaining = float(req.time_budget_min)
     prefs = req.prefs or {}
 
-    def greedy_pick(pool, pos, remaining):
+    def greedy_pick(pool, pos, remaining, curr_floor, curr_room_id):
         best = None
         best_ratio = -1.0
         best_cost = None
         best_walk = None
+        
         for e in pool:
-            w = walk_min(pos, e["pos"])
+            w = walk_time_cost(pos, e["pos"], curr_floor, e["floor"], curr_room_id, e["room_id"])
             c = w + e["view_min"]
             if c > remaining:
                 continue
@@ -125,7 +141,7 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
         if not pools:
             break
 
-        best, cost, wmin = greedy_pick(pools[0], pos, remaining)
+        best, cost, wmin = greedy_pick(pools[0], pos, remaining, curr_floor, curr_room_id)
         if best is None:
             # nothing fits from this pool — try next pool
             pools.pop(0)
@@ -140,6 +156,8 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
             "pos": best["pos"],
             "walk_min": round(wmin, 2),
             "view_min": round(best["view_min"], 2),
+            "room_id": best["room_id"],
+            "floor": best["floor"],
             "score": best["score"],
             "score_weighted": round(best["score"] * float(prefs.get(best["type"], 1.0)), 3),
             "eta_min": round(total_time + cost, 2),
@@ -147,6 +165,8 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
         path.append(step)
 
         pos = best["pos"]
+        curr_floor = int(best["floor"])
+        curr_room_id = best["room_id"]
         remaining -= cost
         total_time += cost
         total_walk += wmin
@@ -162,7 +182,7 @@ def plan_route(req: PlanRequest, session: Session = Depends(get_session)):
     # Optional return to entrance
     back_walk_min = 0.0
     if req.return_to_entrance and path:
-        back_walk_min = walk_min(pos, tuple(req.entrance))
+        back_walk_min = walk_time_cost(pos, tuple(req.entrance), curr_floor, 1, curr_room_id, None)
         if back_walk_min <= remaining:
             total_time += back_walk_min
             total_walk += back_walk_min
