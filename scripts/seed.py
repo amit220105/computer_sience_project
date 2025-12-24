@@ -2,46 +2,41 @@ import json
 from pathlib import Path
 from sqlmodel import Session
 from src.api.database import engine, init_db
-from src.api.models import Exhibit
+from src.api.models import Room, Exhibit, ExhibitType
 
-INSTANCE_PATH = Path("instances") / "floor_small.json"
 
-def seed(instance_path: Path = INSTANCE_PATH):
-    """Create tables (if missing) and insert exhibits from JSON once."""
+def run(seed_path: str):
     init_db()
-    if not instance_path.exists():
-        raise FileNotFoundError(f"Instance file not found: {instance_path}")
-
-    data = json.loads(instance_path.read_text(encoding="utf-8"))
-    exhibits = []
-    for e in data.get("exhibits", []):
-        exhibits.append(
-            Exhibit(
-                id=e["id"],
-                name=e["name"],
-                type=e["type"],          # "painting" | "sculpture"
-                pos_x=float(e["pos"][0]),
-                pos_y=float(e["pos"][1]),
-                # initial aggregates (will be updated by /feedback)
-                prior=3.8,
-                prior_weight=20,
-                rating_sum=0.0,
-                rating_count=0,
-                score=3.8,
-                avg_view_time_min=5.0,
-                view_time_count=0,
-            )
-        )
-
-    inserted = 0
+    data = json.loads(Path(seed_path).read_text(encoding="utf-8"))
     with Session(engine) as s:
-        for ex in exhibits:
-            if not s.get(Exhibit, ex.id):   # insert only if not exists
-                s.add(ex)
-                inserted += 1
+        # rooms
+        for r in data["rooms"]:
+            s.add(Room(
+                id=r["id"],
+                name=r["name"],
+                theme=r.get("theme"),
+                pos_x=r["pos"][0], pos_y=r["pos"][1], pos_z=r["pos"][2],
+                dwell_min=5.0  # default value; will be updated later
+            ))
+        # exhibits
+        for e in data["exhibits"]:
+            s.add(Exhibit(
+                id=e["id"],
+                room_id=e["room_id"],
+                name=e["name"],
+                type=ExhibitType(e["type"]),
+                avg_view_time_min=float(e.get("avg_view_time_min", 5.0))
+            ))
         s.commit()
 
-    print(f"Seed complete. Inserted {inserted} exhibits. File: {instance_path}")
+        # derive room dwell from its exhibits (avg view time)
+        rooms = s.query(Room).all()
+        for r in rooms:
+            exs = [ex for ex in r.exhibits]
+            if exs:
+                r.dwell_min = max(3.0, sum(ex.avg_view_time_min for ex in exs)/len(exs))
+        s.commit()
 
 if __name__ == "__main__":
-    seed()
+    import sys
+    run(sys.argv[1])

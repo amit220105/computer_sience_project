@@ -1,0 +1,12 @@
+{
+  "rooms": [
+    { "id": "R101", "name": "Impressionists", "theme": "painting",  "pos": [10, 4, 0] },
+    { "id": "R102", "name": "Marble Hall",    "theme": "sculpture", "pos": [5, 12, 0] },
+    { "id": "R201", "name": "Blue Gallery",   "theme": "painting",  "pos": [14, 9, 1] }
+  ],
+  "exhibits": [
+    { "id": "E1", "room_id": "R201", "name": "Blue Room",   "type": "painting"  , "avg_view_time_min": 5.0 },
+    { "id": "E2", "room_id": "R102", "name": "Marble Hero", "type": "sculpture" , "avg_view_time_min": 5.0 },
+    { "id": "E3", "room_id": "R101", "name": "Sunset",      "type": "painting"  , "avg_view_time_min": 5.0 }
+  ]
+}

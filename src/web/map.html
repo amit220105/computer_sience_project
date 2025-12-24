@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Museum Route 3D</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; }
+    header { padding: 12px 16px; border-bottom: 1px solid #eee; }
+    main { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px; }
+    .panel { border: 1px solid #eee; border-radius: 8px; padding: 12px; }
+    label { display:block; margin-top: 8px; font-size: 14px; }
+    input[type="number"] { width: 100%; }
+    #chart { width: 100%; height: 80vh; }
+    code { background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<header>
+  <h2>Museum Route – 3D Viewer</h2>
+</header>
+
+<main>
+  <section class="panel">
+    <h3>Plan request</h3>
+    <label>Time budget (min)
+      <input id="timeBudget" type="number" value="35" min="1" step="1">
+    </label>
+    <label>Entrance (x,y,z)
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <input id="ex" type="number" value="0" step="0.1">
+        <input id="ey" type="number" value="0" step="0.1">
+        <input id="ez" type="number" value="0" step="1">
+      </div>
+    </label>
+    <label>Speed (m/min)
+      <input id="speed" type="number" value="60" min="1" step="1">
+    </label>
+    <label>Floor change penalty (min)
+      <input id="floorPenalty" type="number" value="2" min="0" step="0.5">
+    </label>
+    <label>Return to entrance?
+      <input id="returnEntrance" type="checkbox">
+    </label>
+    <label>Prefs JSON (optional)
+      <input id="prefs" type="text" placeholder='{"painting":1.15,"sculpture":0.95}'>
+    </label>
+    <label>Must visit (room IDs, comma separated)
+      <input id="must" type="text" placeholder="R1,R4">
+    </label>
+    <label>Avoid (room IDs, comma separated)
+      <input id="avoid" type="text" placeholder="R5">
+    </label>
+    <label>Max stops (optional)
+      <input id="maxStops" type="number" min="1" step="1">
+    </label>
+    <button id="goBtn" style="margin-top:12px;">Plan & Render</button>
+
+    <div style="margin-top:12px;font-size:13px;color:#555;">
+      Calls <code>POST /route/plan-rooms</code> and <code>GET /rooms</code>, then renders a 3D line.
+    </div>
+  </section>
+
+  <section class="panel">
+    <div id="chart"></div>
+  </section>
+</main>
+
+<script>
+async function planRoute() {
+  const timeBudget = parseFloat(document.getElementById("timeBudget").value);
+  const ex = parseFloat(document.getElementById("ex").value);
+  const ey = parseFloat(document.getElementById("ey").value);
+  const ez = parseInt(document.getElementById("ez").value, 10);
+  const speed = parseFloat(document.getElementById("speed").value);
+  const floorPenalty = parseFloat(document.getElementById("floorPenalty").value);
+  const ret = document.getElementById("returnEntrance").checked;
+  const prefsText = document.getElementById("prefs").value.trim();
+  const mustText = document.getElementById("must").value.trim();
+  const avoidText = document.getElementById("avoid").value.trim();
+  const maxStops = document.getElementById("maxStops").value ? parseInt(document.getElementById("maxStops").value, 10) : null;
+
+  let prefs = null;
+  if (prefsText) {
+    try { prefs = JSON.parse(prefsText); } catch(e) { alert("Invalid prefs JSON"); return; }
+  }
+  const must_visit = mustText ? mustText.split(",").map(s => s.trim()).filter(Boolean) : [];
+  const avoid = avoidText ? avoidText.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+  const payload = {
+    time_budget_min: timeBudget,
+    entrance: [ex, ey, ez],
+    speed_m_per_min: speed,
+    floor_change_min: floorPenalty,
+    return_to_entrance: ret,
+    prefs, must_visit, avoid,
+    max_stops: maxStops
+  };
+
+  const planRes = await fetch("/route/plan-rooms", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  if (!planRes.ok) {
+    const errText = await planRes.text();
+    throw new Error(`Planner error: ${planRes.status}\n${errText}`);
+  }
+  const plan = await planRes.json();
+
+  // Fetch rooms to plot all nodes (optional)
+  const roomsRes = await fetch("/rooms");
+  const rooms = roomsRes.ok ? await roomsRes.json() : [];
+
+  render3D(plan, rooms);
+}
+
+function render3D(plan, rooms) {
+  // Extract route polyline3d
+  const xs = plan.polyline3d.map(p => p[0]);
+  const ys = plan.polyline3d.map(p => p[1]);
+  const zs = plan.polyline3d.map(p => p[2]);
+
+  // Line trace (route)
+  const lineTrace = {
+    type: "scatter3d",
+    mode: "lines+markers",
+    x: xs, y: ys, z: zs,
+    line: { width: 6 },
+    marker: { size: 4 },
+    name: "Route"
+  };
+
+  // Room markers (all rooms)
+  const rx = rooms.map(r => r.pos[0]);
+  const ry = rooms.map(r => r.pos[1]);
+  const rz = rooms.map(r => r.pos[2]);
+  const rtext = rooms.map(r => `${r.name} (${r.id})`);
+
+  const roomsTrace = {
+    type: "scatter3d",
+    mode: "markers+text",
+    x: rx, y: ry, z: rz,
+    marker: { size: 3, symbol: "circle" },
+    text: rtext,
+    textposition: "top center",
+    name: "Rooms"
+  };
+
+  const layout = {
+    scene: {
+      xaxis: { title: "X (m)" },
+      yaxis: { title: "Y (m)" },
+      zaxis: { title: "Floor (z)" }
+    },
+    margin: { l: 0, r: 0, t: 0, b: 0 },
+    showlegend: true
+  };
+
+  Plotly.newPlot("chart", [roomsTrace, lineTrace], layout, {responsive: true});
+}
+
+document.getElementById("goBtn").addEventListener("click", () => {
+  planRoute().catch(e => alert(e.message));
+});
+
+// Auto-run once with defaults
+planRoute().catch(()=>{});
+</script>
+</body>
+</html>
