@@ -73,3 +73,6 @@ class RouteLog(SQLModel, table=True):
     total_time_min: float
     total_walk_min: float
     total_view_min: float     
+
+
+    

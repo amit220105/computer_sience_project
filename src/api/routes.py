@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from typing import Dict, List, Optional, Tuple, Literal
+
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -12,9 +14,179 @@ from sqlmodel import Session, select
 from .database import get_session
 from .models import Exhibit, Feedback, RouteLog, Room
 from .services import apply_feedback
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
+FLOOR_IMG = {
+    0: "src/web/floor0.png",
+    1: "src/web/floor1.png",
+}
+
+RENDER_CALIB = {
+
+    0: {"px_per_meter": 17.0, "origin": (100, 555)},  # floor 0
+    1: {"px_per_meter": 20.0, "origin": (90, 45)},  # floor 1
+}
+
+@router.get("/render/preview", response_class=StreamingResponse)
+def render_preview(session: Session = Depends(get_session)):
+    # Build a fake “route” that lists all rooms so we draw their centroids.
+    rooms = session.exec(select(Room)).all()
+    visited = [r.id for r in rooms]
+    
+    route_like = {
+        "polyline3d": [(0.0, 0.0, 0)],    # just the entrance marker
+        "visited": visited,
+    }
+    png = _render_route_image(route_like, _rooms_by_id(session))
+    return StreamingResponse(BytesIO(png), media_type="image/png")
+
+
+def world_to_px(x: float, y: float, floor: int) -> tuple[int, int]:
+    cfg = RENDER_CALIB[floor]
+    s = cfg["px_per_meter"]
+    ox, oy = cfg["origin"]
+    return int(ox + x * s), int(oy - y * s)
+
+def _rooms_by_id(session: Session) -> dict[str, Room]:
+    return {r.id: r for r in session.exec(select(Room)).all()}
+
+def _render_route_image(route: dict, rooms_by_id: dict[str, Room]) -> bytes:
+    """
+    Render a PNG of the planned route on top of the floor plan images.
+    - Floors are stacked vertically in the output.
+    - Only centroids and polylines are drawn (no room rectangles).
+    - Expects `route` to contain:
+        * "polyline3d": List[[x, y, z], ...]  (preferred)
+          OR "polyline": List[[x, y], ...] and a single "floor" in metadata.
+        * "visited": List[room_id] (optional; used for labeling)
+    Returns: PNG bytes.
+    """
+
+    # ---------- Collect floors & background images ----------
+    # Gather floors that appear in the polyline
+    poly3d = route.get("polyline3d")
+    floors_in_route = []
+    if poly3d:
+        floors_in_route = sorted({int(p[2]) for p in poly3d})
+    else:
+        # Fallback: if only 2D polyline exists, assume floor 0
+        floors_in_route = [0]
+
+    # Load images and compute composite canvas size
+    bg_images: dict[int, Image.Image] = {}
+    widths, heights = [], []
+    for f in floors_in_route:
+        path = FLOOR_IMG.get(f)
+        if path and os.path.exists(path):
+            img = Image.open(path).convert("RGB")
+        else:
+            # Blank fallback canvas if the file is missing
+            img = Image.new("RGB", (1000, 700), (245, 245, 245))
+        bg_images[f] = img
+        widths.append(img.width)
+        heights.append(img.height)
+
+    margin = 20
+    out_w = max(widths) if widths else 1000
+    out_h = sum(heights) + margin * (len(heights) - 1) if heights else 700
+
+    # Composite image
+    out = Image.new("RGB", (out_w, out_h), (255, 255, 255))
+
+    # Try to get a font for labels
+    def _load_font(size: int):
+        for name in ("arial.ttf", "DejaVuSans.ttf"):
+            try:
+                return ImageFont.truetype(name, size)
+            except Exception:
+                pass
+        return ImageFont.load_default()
+
+    font = _load_font(16)
+    font_small = _load_font(13)
+
+    # Precompute vertical offsets (stack floors)
+    floor_offsets: dict[int, int] = {}
+    y_cursor = 0
+    for f in floors_in_route:
+        out.paste(bg_images[f], (0, y_cursor))
+        floor_offsets[f] = y_cursor
+        y_cursor += bg_images[f].height + margin
+
+    draw = ImageDraw.Draw(out)
+
+    # ---------- Helpers ----------
+    def to_px(x: float, y: float, floor: int) -> tuple[int, int]:
+        px, py = world_to_px(x, y, floor)  # uses your RENDER_CALIB
+        return px, py + floor_offsets[floor]
+
+    def draw_point(x, y, floor, fill, r=6, outline=(0, 0, 0)):
+        cx, cy = to_px(x, y, floor)
+        draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill, outline=outline, width=1)
+        return cx, cy
+
+    def draw_label(x, y, floor, text, fill=(0, 0, 0)):
+        cx, cy = to_px(x, y, floor)
+        draw.text((cx + 8, cy - 8), text, font=font_small, fill=fill)
+
+    # ---------- Draw polylines per floor ----------
+    if poly3d:
+        # Draw segments on their respective floors
+        for a, b in zip(poly3d[:-1], poly3d[1:]):
+            x1, y1, z1 = float(a[0]), float(a[1]), int(a[2])
+            x2, y2, z2 = float(b[0]), float(b[1]), int(b[2])
+            if z1 != z2:
+                continue  # do not draw inter-floor jumps
+            p1 = to_px(x1, y1, z1)
+            p2 = to_px(x2, y2, z2)
+            draw.line([p1, p2], fill=(220, 0, 0), width=5)
+        # Entrance marker
+        ex, ey, ez = float(poly3d[0][0]), float(poly3d[0][1]), int(poly3d[0][2])
+        draw_point(ex, ey, ez, fill=(20, 90, 255), r=7)
+        draw_label(ex, ey, ez, "Entrance", fill=(20, 90, 255))
+    else:
+        # 2D polyline fallback on floor 0
+        poly2d = route.get("polyline") or []
+        for a, b in zip(poly2d[:-1], poly2d[1:]):
+            x1, y1 = float(a[0]), float(a[1])
+            x2, y2 = float(b[0]), float(b[1])
+            p1 = to_px(x1, y1, 0)
+            p2 = to_px(x2, y2, 0)
+            draw.line([p1, p2], fill=(220, 0, 0), width=5)
+        if poly2d:
+            ex, ey = float(poly2d[0][0]), float(poly2d[0][1])
+            draw_point(ex, ey, 0, fill=(20, 90, 255), r=7)
+            draw_label(ex, ey, 0, "Entrance", fill=(20, 90, 255))
+
+    # ---------- Mark stops using room centroids ----------
+    # Try to use the rooms inside "path_rooms" if present, else "visited"
+    visited_ids: list[str] = []
+    if "path_rooms" in route and isinstance(route["path_rooms"], list):
+        visited_ids = [step["room_id"] for step in route["path_rooms"] if "room_id" in step]
+    elif "visited" in route and isinstance(route["visited"], list):
+        visited_ids = list(route["visited"])
+
+    for idx, rid in enumerate(visited_ids, start=1):
+        room = rooms_by_id.get(rid)
+        if not room:
+            continue
+        x, y, z = float(room.pos_x), float(room.pos_y), int(getattr(room, "pos_z", 0))
+        draw_point(x, y, z, fill=(0, 200, 0), r=6)
+        draw_label(x, y, z, f"{idx}. {room.name}", fill=(0, 120, 0))
+
+    # ---------- Title ----------
+    title = "Museum Route"
+    draw.text((10, 10), title, font=font, fill=(0, 0, 0))
+
+    # ---------- Encode PNG ----------
+    buf = BytesIO()
+    out.save(buf, format="PNG")
+    buf.seek(0)
+    return buf.read()
 
 
 class ExhibitOut(BaseModel):
@@ -263,6 +435,13 @@ def list_room_exhibits(room_id: str, session: Session = Depends(get_session)):
 # =========================================================
 # Room-level planner
 # =========================================================
+@router.post("/route/plan-rooms/image", response_class=StreamingResponse)
+def plan_route_rooms_image(req: PlanRoomsRequest, session: Session = Depends(get_session)):
+    result_model = plan_route_rooms(req, session)            # returns PlanRoomsResult
+    route_dict = result_model.model_dump() if hasattr(result_model, "model_dump") else result_model.dict()
+    rooms_map = _rooms_by_id(session)
+    png_bytes = _render_route_image(route_dict, rooms_map)
+    return StreamingResponse(BytesIO(png_bytes), media_type="image/png")
 
 @router.post("/route/plan-rooms", response_model=PlanRoomsResult)
 def plan_route_rooms(req: PlanRoomsRequest, session: Session = Depends(get_session)):

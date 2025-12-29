@@ -1,0 +1,49 @@
+{
+  "rooms": [
+    { "id": "R101", "name": "Impressionists",      "theme": "painting",    "pos": [10,  4, 0] },
+    { "id": "R102", "name": "Marble Hall",         "theme": "sculpture",   "pos": [ 5, 12, 0] },
+    { "id": "R103", "name": "Modern Shapes",       "theme": "sculpture",   "pos": [ 2,  6, 0] },
+    { "id": "R104", "name": "Renaissance Court",   "theme": "painting",    "pos": [12,  3, 0] },
+
+    { "id": "R201", "name": "Blue Gallery",        "theme": "painting",    "pos": [14,  9, 1] },
+    { "id": "R202", "name": "Bronze Atrium",       "theme": "sculpture",   "pos": [ 6, 15, 1] },
+    { "id": "R203", "name": "Abstract Wing",       "theme": "painting",    "pos": [ 3, 10, 1] },
+    { "id": "R204", "name": "Photography Nook",    "theme": "painting",    "pos": [11, 13, 1] }
+  ],
+
+  "exhibits": [
+    { "id": "E1",  "room_id": "R201", "name": "Blue Room",          "type": "painting",  "avg_view_time_min": 5.0 },
+    { "id": "E2",  "room_id": "R102", "name": "Marble Hero",        "type": "sculpture", "avg_view_time_min": 5.0 },
+    { "id": "E3",  "room_id": "R101", "name": "Sunset",             "type": "painting",  "avg_view_time_min": 5.0 },
+
+    { "id": "E4",  "room_id": "R101", "name": "Water Lilies",       "type": "painting",  "avg_view_time_min": 6.0 },
+    { "id": "E5",  "room_id": "R101", "name": "Paris Street",       "type": "painting",  "avg_view_time_min": 4.5 },
+
+    { "id": "E6",  "room_id": "R102", "name": "Roman Athlete",      "type": "sculpture", "avg_view_time_min": 4.0 },
+    { "id": "E7",  "room_id": "R102", "name": "Venus Fragment",     "type": "sculpture", "avg_view_time_min": 3.5 },
+    { "id": "E8",  "room_id": "R102", "name": "Marble Lion",        "type": "sculpture", "avg_view_time_min": 4.8 },
+
+    { "id": "E9",  "room_id": "R103", "name": "Wire Form No. 2",    "type": "sculpture", "avg_view_time_min": 3.8 },
+    { "id": "E10", "room_id": "R103", "name": "Stone Curve",        "type": "sculpture", "avg_view_time_min": 4.2 },
+    { "id": "E11", "room_id": "R103", "name": "Minimal Totem",      "type": "sculpture", "avg_view_time_min": 3.2 },
+
+    { "id": "E12", "room_id": "R104", "name": "Madonna & Child",    "type": "painting",  "avg_view_time_min": 6.5 },
+    { "id": "E13", "room_id": "R104", "name": "Courtly Hunt",       "type": "painting",  "avg_view_time_min": 5.7 },
+    { "id": "E14", "room_id": "R104", "name": "Golden Triptych",    "type": "painting",  "avg_view_time_min": 6.2 },
+
+    { "id": "E15", "room_id": "R201", "name": "Blue Horizon",       "type": "painting",  "avg_view_time_min": 4.3 },
+    { "id": "E16", "room_id": "R201", "name": "Cobalt Forest",      "type": "painting",  "avg_view_time_min": 4.9 },
+
+    { "id": "E17", "room_id": "R202", "name": "Bronze Runner",      "type": "sculpture", "avg_view_time_min": 4.4 },
+    { "id": "E18", "room_id": "R202", "name": "Sun Mask",           "type": "sculpture", "avg_view_time_min": 3.9 },
+    { "id": "E19", "room_id": "R202", "name": "Armored Figure",     "type": "sculpture", "avg_view_time_min": 4.6 },
+
+    { "id": "E20", "room_id": "R203", "name": "Red on Grey",        "type": "painting",  "avg_view_time_min": 4.1 },
+    { "id": "E21", "room_id": "R203", "name": "Triangle Drift",     "type": "painting",  "avg_view_time_min": 3.6 },
+    { "id": "E22", "room_id": "R203", "name": "Untitled Grid",      "type": "painting",  "avg_view_time_min": 3.8 },
+
+    { "id": "E23", "room_id": "R204", "name": "City at Night",      "type": "painting",  "avg_view_time_min": 4.7 },
+    { "id": "E24", "room_id": "R204", "name": "Portrait in Light",  "type": "painting",  "avg_view_time_min": 4.2 },
+    { "id": "E25", "room_id": "R204", "name": "Gallery Stairs",     "type": "painting",  "avg_view_time_min": 3.9 }
+  ]
+}
