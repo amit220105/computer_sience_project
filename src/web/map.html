@@ -2,171 +2,302 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>Museum Route 3D</title>
+  <title>Museum Smart Router</title>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 0; }
-    header { padding: 12px 16px; border-bottom: 1px solid #eee; }
-    main { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 16px; }
-    .panel { border: 1px solid #eee; border-radius: 8px; padding: 12px; }
-    label { display:block; margin-top: 8px; font-size: 14px; }
-    input[type="number"] { width: 100%; }
-    #chart { width: 100%; height: 80vh; }
-    code { background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }
+    /* Basic Reset & Layout */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #f4f4f9; color: #333; }
+    header { background: #2c3e50; color: #fff; padding: 1rem; text-align: center; }
+    
+    main { display: grid; grid-template-columns: 350px 1fr; gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+    
+    /* Panels */
+    .panel { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; color: #2c3e50; }
+    
+    /* Form Elements */
+    label { display:block; margin-top: 12px; font-weight: 600; font-size: 14px; }
+    input[type="number"], input[type="text"], input[type="checkbox"] { margin-top: 4px; padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+    input[type="checkbox"] { width: auto; }
+    
+    button#goBtn {
+      background: #27ae60; color: white; border: none; padding: 12px; width: 100%;
+      font-size: 16px; margin-top: 20px; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+    }
+    button#goBtn:hover { background: #219150; }
+
+    /* Results Area */
+    #mapContainer { text-align: center; background: #fafafa; border: 1px dashed #ccc; min-height: 400px; display: flex; align-items: center; justify-content: center; overflow: auto; }
+    #mapImage { max-width: 100%; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .placeholder-text { color: #999; font-style: italic; }
+
+    /* Route Steps List */
+    #routeSteps { margin-top: 20px; }
+    .step-card { border: 1px solid #eee; border-left: 4px solid #3498db; padding: 10px; margin-bottom: 10px; background: #fff; }
+    .step-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .step-title { font-weight: bold; font-size: 1.1em; }
+    .step-meta { font-size: 0.9em; color: #666; }
+    
+    /* Exhibits & Feedback */
+    .exhibit-list { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; display: none; }
+    .exhibit-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+    .feedback-controls { display: flex; gap: 5px; align-items: center; }
+    .btn-rate { background: #e67e22; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-rate:hover { background: #d35400; }
+    
+    .loading { color: #7f8c8d; font-style: italic; display: none; }
   </style>
 </head>
 <body>
+
 <header>
-  <h2>Museum Route – 3D Viewer</h2>
+  <h2>🏛️ Museum Smart Tour System</h2>
 </header>
 
 <main>
   <section class="panel">
-    <h3>Plan request</h3>
-    <label>Time budget (min)
-      <input id="timeBudget" type="number" value="35" min="1" step="1">
+    <h3>📋 Plan Your Visit</h3>
+    <label>Time Budget (min)
+      <input id="timeBudget" type="number" value="35" min="5" step="1">
     </label>
-    <label>Entrance (x,y,z)
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-        <input id="ex" type="number" value="0" step="0.1">
-        <input id="ey" type="number" value="0" step="0.1">
-        <input id="ez" type="number" value="0" step="1">
-      </div>
-    </label>
-    <label>Speed (m/min)
-      <input id="speed" type="number" value="60" min="1" step="1">
-    </label>
-    <label>Floor change penalty (min)
-      <input id="floorPenalty" type="number" value="2" min="0" step="0.5">
-    </label>
-    <label>Return to entrance?
-      <input id="returnEntrance" type="checkbox">
-    </label>
-    <label>Prefs JSON (optional)
-      <input id="prefs" type="text" placeholder='{"painting":1.15,"sculpture":0.95}'>
-    </label>
-    <label>Must visit (room IDs, comma separated)
-      <input id="must" type="text" placeholder="R1,R4">
-    </label>
-    <label>Avoid (room IDs, comma separated)
-      <input id="avoid" type="text" placeholder="R5">
-    </label>
-    <label>Max stops (optional)
-      <input id="maxStops" type="number" min="1" step="1">
-    </label>
-    <button id="goBtn" style="margin-top:12px;">Plan & Render</button>
+    
 
-    <div style="margin-top:12px;font-size:13px;color:#555;">
-      Calls <code>POST /route/plan-rooms</code> and <code>GET /rooms</code>, then renders a 3D line.
-    </div>
+    <label>Walking Speed (m/min)
+      <input id="speed" type="number" value="60">
+    </label>
+    
+    <label>
+      <input id="returnEntrance" type="checkbox" checked> Return to entrance at the end?
+    </label>
+    
+    <label>Preferences (JSON)
+      <input id="prefs" type="text" value='{"painting": 1.5, "sculpture": 0.8}'>
+    </label>
+    
+    <label>Must Visit (Room IDs)
+      <input id="must" type="text" placeholder="e.g. room_1, room_3">
+    </label>
+    
+    <label>Avoid (Room IDs)
+      <input id="avoid" type="text" placeholder="e.g. room_5">
+    </label>
+
+   <label>Maximum Rooms to Visit
+      <input id="max_stops" type="number" placeholder="e.g. 5">
+    </label>
+
+
+    <button id="goBtn">🚀 Generate Optimal Route</button>
   </section>
 
   <section class="panel">
-    <div id="chart"></div>
+    <h3>🗺️ Route Visualization</h3>
+    <div id="mapContainer">
+      <span class="placeholder-text">Please configure preferences and click "Generate" to see the map.</span>
+      <span class="loading">Calculating best path...</span>
+      <img id="mapImage" alt="Route Map" />
+    </div>
+
+    <h3>📍 Itinerary & Feedback</h3>
+    <div id="routeSteps">
+      <p style="color:#777;">Plan a route to see the step-by-step itinerary.</p>
+    </div>
   </section>
 </main>
 
 <script>
-async function planRoute() {
-  const timeBudget = parseFloat(document.getElementById("timeBudget").value);
-  const ex = parseFloat(document.getElementById("ex").value);
-  const ey = parseFloat(document.getElementById("ey").value);
-  const ez = parseInt(document.getElementById("ez").value, 10);
-  const speed = parseFloat(document.getElementById("speed").value);
-  const floorPenalty = parseFloat(document.getElementById("floorPenalty").value);
-  const ret = document.getElementById("returnEntrance").checked;
-  const prefsText = document.getElementById("prefs").value.trim();
-  const mustText = document.getElementById("must").value.trim();
-  const avoidText = document.getElementById("avoid").value.trim();
-  const maxStops = document.getElementById("maxStops").value ? parseInt(document.getElementById("maxStops").value, 10) : null;
+const API_BASE = ""; // Relative path
 
-  let prefs = null;
-  if (prefsText) {
-    try { prefs = JSON.parse(prefsText); } catch(e) { alert("Invalid prefs JSON"); return; }
+document.getElementById("goBtn").addEventListener("click", generateRoute);
+
+async function generateRoute() {
+  const btn = document.getElementById("goBtn");
+  const mapImg = document.getElementById("mapImage");
+  const loading = document.querySelector("#mapContainer .loading");
+  const placeholder = document.querySelector("#mapContainer .placeholder-text");
+  const stepsContainer = document.getElementById("routeSteps");
+
+  // UI State: Loading
+  btn.disabled = true;
+  btn.innerText = "Computing...";
+  if(placeholder) placeholder.style.display = "none";
+  mapImg.style.display = "none";
+  loading.style.display = "block";
+  stepsContainer.innerHTML = '<p class="loading" style="display:block">Calculating best path...</p>';
+
+  try {
+    // 1. Prepare Payload
+    const payload = getPayloadFromUI();
+
+    // 2. Fetch DATA + IMAGE in a single request (Optimization)
+    const res = await fetch(`${API_BASE}/route/plan-rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) throw new Error("Failed to calculate route");
+    const routeData = await res.json();
+
+    // 3. Update UI
+    
+    // Display the image from Base64 string
+    if (routeData.map_base64) {
+        mapImg.src = `data:image/png;base64,${routeData.map_base64}`;
+        mapImg.style.display = "block";
+    }
+
+    loading.style.display = "none";
+    
+    renderRouteSteps(routeData);
+
+  } catch (err) {
+    alert("Error: " + err.message);
+    loading.style.display = "none";
+    if(placeholder) placeholder.style.display = "block";
+    placeholder.innerText = "Error loading data.";
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "🚀 Generate Optimal Route";
   }
-  const must_visit = mustText ? mustText.split(",").map(s => s.trim()).filter(Boolean) : [];
-  const avoid = avoidText ? avoidText.split(",").map(s => s.trim()).filter(Boolean) : [];
+}
 
-  const payload = {
-    time_budget_min: timeBudget,
-    entrance: [ex, ey, ez],
-    speed_m_per_min: speed,
-    floor_change_min: floorPenalty,
-    return_to_entrance: ret,
-    prefs, must_visit, avoid,
-    max_stops: maxStops
+function getPayloadFromUI() {
+  const parseList = (id) => document.getElementById(id).value.split(",").map(s=>s.trim()).filter(Boolean);
+  
+  let prefs = {};
+  try { prefs = JSON.parse(document.getElementById("prefs").value); } catch(e) {}
+
+  return {
+    time_budget_min: parseFloat(document.getElementById("timeBudget").value),
+    entrance: [0, 0, 0],
+    speed_m_per_min: parseFloat(document.getElementById("speed").value),
+    return_to_entrance: document.getElementById("returnEntrance").checked,
+    prefs: prefs,
+    must_visit: parseList("must"),
+    avoid: parseList("avoid"),
+    max_stops: parseInt(document.getElementById("max_stops").value)
   };
+}
 
-  const planRes = await fetch("/route/plan-rooms", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload)
+function renderRouteSteps(data) {
+  const container = document.getElementById("routeSteps");
+  container.innerHTML = `
+    <div style="margin-bottom:15px; font-weight:bold; color:#27ae60;">
+      Total Time: ${data.total_time_min} min | 
+      Walk: ${data.total_walk_min} min | 
+      View: ${data.total_view_min} min
+    </div>
+  `;
+
+  if (!data.path || data.path.length === 0) {
+    container.innerHTML += "<p>No rooms visited.</p>";
+    return;
+  }
+
+  data.path.forEach((step, index) => {
+    const div = document.createElement("div");
+    div.className = "step-card";
+    div.innerHTML = `
+      <div class="step-header" onclick="toggleExhibits('${step.id}', this)">
+        <div>
+          <span class="step-title">${index + 1}. ${step.name}</span>
+          <div class="step-meta">Time here: ${step.view_min} min | Score: ${step.score_weighted}</div>
+        </div>
+        <button style="font-size:12px;">▼ Rate Exhibits</button>
+      </div>
+      <div class="exhibit-list" id="exhibits-${step.id}">
+        <div class="loading" style="display:block">Loading exhibits...</div>
+      </div>
+    `;
+    container.appendChild(div);
   });
-  if (!planRes.ok) {
-    const errText = await planRes.text();
-    throw new Error(`Planner error: ${planRes.status}\n${errText}`);
+}
+
+async function toggleExhibits(roomId, headerEl) {
+  const listEl = document.getElementById(`exhibits-${roomId}`);
+  
+  // Toggle visibility
+  if (listEl.style.display === "block") {
+    listEl.style.display = "none";
+    return;
   }
-  const plan = await planRes.json();
+  listEl.style.display = "block";
 
-  // Fetch rooms to plot all nodes (optional)
-  const roomsRes = await fetch("/rooms");
-  const rooms = roomsRes.ok ? await roomsRes.json() : [];
+  // Load data if not already loaded
+  if (listEl.dataset.loaded === "true") return;
 
-  render3D(plan, rooms);
+  try {
+    const res = await fetch(`${API_BASE}/rooms/${roomId}/exhibits`);
+    const exhibits = await res.json();
+    
+    if (exhibits.length === 0) {
+      listEl.innerHTML = "<small>No exhibits in this room.</small>";
+    } else {
+      listEl.innerHTML = exhibits.map(ex => `
+      <div class="exhibit-item">
+        <div style="flex-grow:1">
+          <strong>${ex.name}</strong> <span style="font-size:0.8em;color:#888">(${ex.type})</span><br>
+          <small>Current Score: ${ex.score.toFixed(2)} | Avg Time: ${ex.avg_view_time_min ? ex.avg_view_time_min.toFixed(1) : '-'} min</small>
+        </div>
+        <div class="feedback-controls" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <div style="display:flex; gap:4px;">
+             <input type="number" id="time-${ex.id}" placeholder="Sec" value="120" style="width:50px; padding:4px; font-size:12px;">
+             <select id="rate-${ex.id}" style="padding:4px;">
+              <option value="5">⭐⭐⭐⭐⭐</option>
+              <option value="4">⭐⭐⭐⭐</option>
+              <option value="3" selected>⭐⭐⭐</option>
+              <option value="2">⭐⭐</option>
+              <option value="1">⭐</option>
+            </select>
+          </div>
+          <button class="btn-rate" style="width:100%" onclick="submitFeedback('${ex.id}')">Submit Feedback</button>
+        </div>
+      </div>
+    `).join("");
+    }
+    listEl.dataset.loaded = "true";
+  } catch (e) {
+    listEl.innerHTML = "<small style='color:red'>Error loading exhibits.</small>";
+  }
 }
 
-function render3D(plan, rooms) {
-  // Extract route polyline3d
-  const xs = plan.polyline3d.map(p => p[0]);
-  const ys = plan.polyline3d.map(p => p[1]);
-  const zs = plan.polyline3d.map(p => p[2]);
+async function submitFeedback(exhibitId) {
+  const ratingVal = document.getElementById(`rate-${exhibitId}`).value;
+  
+  // Get time from input, fallback to 60 seconds if empty or invalid
+  let viewTimeInput = document.getElementById(`time-${exhibitId}`).value;
+  let viewTime = parseInt(viewTimeInput);
+  
+  if (isNaN(viewTime) || viewTime <= 0) {
+      viewTime = 60; // Default fallback
+  }
 
-  // Line trace (route)
-  const lineTrace = {
-    type: "scatter3d",
-    mode: "lines+markers",
-    x: xs, y: ys, z: zs,
-    line: { width: 6 },
-    marker: { size: 4 },
-    name: "Route"
-  };
-
-  // Room markers (all rooms)
-  const rx = rooms.map(r => r.pos[0]);
-  const ry = rooms.map(r => r.pos[1]);
-  const rz = rooms.map(r => r.pos[2]);
-  const rtext = rooms.map(r => `${r.name} (${r.id})`);
-
-  const roomsTrace = {
-    type: "scatter3d",
-    mode: "markers+text",
-    x: rx, y: ry, z: rz,
-    marker: { size: 3, symbol: "circle" },
-    text: rtext,
-    textposition: "top center",
-    name: "Rooms"
-  };
-
-  const layout = {
-    scene: {
-      xaxis: { title: "X (m)" },
-      yaxis: { title: "Y (m)" },
-      zaxis: { title: "Floor (z)" }
-    },
-    margin: { l: 0, r: 0, t: 0, b: 0 },
-    showlegend: true
-  };
-
-  Plotly.newPlot("chart", [roomsTrace, lineTrace], layout, {responsive: true});
+  try {
+    const res = await fetch(`${API_BASE}/feedback`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        exhibit_id: exhibitId,
+        rating: parseInt(ratingVal),
+        view_seconds: viewTime
+      })
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      // Show explicit confirmation of the update
+      alert(`Feedback Received!\n\nNew Score: ${data.new_score.toFixed(2)}\nNew Avg Time: ${data.new_avg_view_time_min.toFixed(2)} min`);
+      
+      // Optional: Update the UI text immediately without refreshing
+      // (This requires finding the specific span, but alert is enough for demo)
+    } else {
+      alert("Error sending feedback");
+    }
+  } catch(e) {
+    alert("Network error: " + e.message);
+  }
 }
-
-document.getElementById("goBtn").addEventListener("click", () => {
-  planRoute().catch(e => alert(e.message));
-});
-
-// Auto-run once with defaults
-planRoute().catch(()=>{});
 </script>
 </body>
 </html>

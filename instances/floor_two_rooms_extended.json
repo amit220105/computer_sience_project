@@ -4,11 +4,15 @@
     { "id": "R102", "name": "Marble Hall",         "theme": "sculpture",   "pos": [ 5, 12, 0] },
     { "id": "R103", "name": "Modern Shapes",       "theme": "sculpture",   "pos": [ 2,  6, 0] },
     { "id": "R104", "name": "Renaissance Court",   "theme": "painting",    "pos": [12,  3, 0] },
+    { "id": "R105", "name": "Ancient Pottery",     "theme": "sculpture",   "pos": [ 4,  2, 0] },
+    { "id": "R106", "name": "Landscape Hall",      "theme": "painting",    "pos": [15,  5, 0] },
 
     { "id": "R201", "name": "Blue Gallery",        "theme": "painting",    "pos": [14,  9, 1] },
     { "id": "R202", "name": "Bronze Atrium",       "theme": "sculpture",   "pos": [ 6, 15, 1] },
     { "id": "R203", "name": "Abstract Wing",       "theme": "painting",    "pos": [ 3, 10, 1] },
-    { "id": "R204", "name": "Photography Nook",    "theme": "painting",    "pos": [11, 13, 1] }
+    { "id": "R204", "name": "Photography Nook",    "theme": "painting",    "pos": [11, 13, 1] },
+    { "id": "R205", "name": "Pop Art Corner",      "theme": "painting",    "pos": [ 1, 12, 1] },
+    { "id": "R206", "name": "Glasswork Gallery",   "theme": "sculpture",   "pos": [ 9, 17, 1] }
   ],
 
   "exhibits": [
@@ -44,6 +48,22 @@
 
     { "id": "E23", "room_id": "R204", "name": "City at Night",      "type": "painting",  "avg_view_time_min": 4.7 },
     { "id": "E24", "room_id": "R204", "name": "Portrait in Light",  "type": "painting",  "avg_view_time_min": 4.2 },
-    { "id": "E25", "room_id": "R204", "name": "Gallery Stairs",     "type": "painting",  "avg_view_time_min": 3.9 }
+    { "id": "E25", "room_id": "R204", "name": "Gallery Stairs",     "type": "painting",  "avg_view_time_min": 3.9 },
+
+    { "id": "E26", "room_id": "R105", "name": "Greek Vase",         "type": "sculpture", "avg_view_time_min": 4.0 },
+    { "id": "E27", "room_id": "R105", "name": "Clay Figure",        "type": "sculpture", "avg_view_time_min": 3.5 },
+    { "id": "E28", "room_id": "R105", "name": "Ceramic Bowl",       "type": "sculpture", "avg_view_time_min": 3.0 },
+
+    { "id": "E29", "room_id": "R106", "name": "Mountain View",      "type": "painting",  "avg_view_time_min": 5.2 },
+    { "id": "E30", "room_id": "R106", "name": "River Valley",       "type": "painting",  "avg_view_time_min": 4.8 },
+
+    { "id": "E31", "room_id": "R205", "name": "Soup Can",           "type": "painting",  "avg_view_time_min": 3.5 },
+    { "id": "E32", "room_id": "R205", "name": "Comic Strip",        "type": "painting",  "avg_view_time_min": 4.0 },
+    { "id": "E33", "room_id": "R205", "name": "Neon Sign",          "type": "painting",  "avg_view_time_min": 3.8 },
+    { "id": "E34", "room_id": "R205", "name": "Star Portrait",      "type": "painting",  "avg_view_time_min": 4.2 },
+
+    { "id": "E35", "room_id": "R206", "name": "Glass Swan",         "type": "sculpture", "avg_view_time_min": 4.5 },
+    { "id": "E36", "room_id": "R206", "name": "Crystal Orb",        "type": "sculpture", "avg_view_time_min": 3.9 },
+    { "id": "E37", "room_id": "R206", "name": "Stained Window",     "type": "sculpture", "avg_view_time_min": 5.5 }
   ]
 }

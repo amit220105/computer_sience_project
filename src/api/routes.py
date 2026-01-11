@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import base64
 import json
 import math
 import os
@@ -242,7 +242,8 @@ class PlanRoomsResult(BaseModel):
     visited: List[str]
     polyline3d: List[Tuple[float, float, int]]
     leftover_minutes: float
-    back_walk_min: Optional[float] = None
+    back_walk_min: Optional[float] = None,
+    map_base64: Optional[str] = None
 
 
 # =========================================================
@@ -434,14 +435,7 @@ def list_room_exhibits(room_id: str, session: Session = Depends(get_session)):
 
 # =========================================================
 # Room-level planner
-# =========================================================
-@router.post("/route/plan-rooms/image", response_class=StreamingResponse)
-def plan_route_rooms_image(req: PlanRoomsRequest, session: Session = Depends(get_session)):
-    result_model = plan_route_rooms(req, session)            # returns PlanRoomsResult
-    route_dict = result_model.model_dump() if hasattr(result_model, "model_dump") else result_model.dict()
-    rooms_map = _rooms_by_id(session)
-    png_bytes = _render_route_image(route_dict, rooms_map)
-    return StreamingResponse(BytesIO(png_bytes), media_type="image/png")
+
 
 @router.post("/route/plan-rooms", response_model=PlanRoomsResult)
 def plan_route_rooms(req: PlanRoomsRequest, session: Session = Depends(get_session)):
@@ -551,7 +545,8 @@ def plan_route_rooms(req: PlanRoomsRequest, session: Session = Depends(get_sessi
         leftover_minutes=round(remaining, 2),
         back_walk_min=back_walk_min,
     )
-
+    
+    
     # optional analytics log
     session.add(RouteLog(
         time_budget_min=req.time_budget_min,
@@ -570,5 +565,11 @@ def plan_route_rooms(req: PlanRoomsRequest, session: Session = Depends(get_sessi
         total_view_min=result.total_view_min,
     ))
     session.commit()
+
+    route_dict = result.model_dump()
+    rooms_map = _rooms_by_id(session)
+    png_bytes = _render_route_image(route_dict, rooms_map)
+    b64_str = base64.b64encode(png_bytes).decode("utf-8")
+    result.map_base64 = b64_str
 
     return result
